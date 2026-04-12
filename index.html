@@ -458,7 +458,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--dark);min-height:1
       </div>
     </div>
     <div style="background:#fff;border-radius:14px;padding:14px 18px;box-shadow:var(--shadow);display:flex;gap:14px;align-items:flex-start">
-      <div style="font-size:32px;flex-shrink:0">📏</div>
+      <div style="font-size:32px;flex-shrink:0">↔️</div>
       <div>
         <div style="font-weight:900;font-size:14px;margin-bottom:3px">適當行距與字距</div>
         <div style="font-size:13px;color:var(--mid);line-height:1.6">合理的排版大幅降低視覺閱讀負擔，讓眼睛不容易跳行。</div>
@@ -472,9 +472,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--dark);min-height:1
       </div>
     </div>
     <div style="background:#fff;border-radius:14px;padding:14px 18px;box-shadow:var(--shadow);display:flex;gap:14px;align-items:flex-start">
-      <div style="font-size:32px;flex-shrink:0">🔖</div>
+      <div style="font-size:32px;flex-shrink:0">📏</div>
       <div>
-        <div style="font-weight:900;font-size:14px;margin-bottom:3px">閱讀尺輔助</div>
+        <div style="font-weight:900;font-size:14px;margin-bottom:3px">閱讀輔具輔助</div>
         <div style="font-size:13px;color:var(--mid);line-height:1.6">遮住多餘刺激、集中視線，有效降低視覺疲勞感。</div>
       </div>
     </div>
@@ -627,7 +627,7 @@ const STAGES = {
     correct:['d2-ls','d2-lp','d2-rc'],
     hasAudio:true,hasTimer:false,
     boyImg:IMG_BOY,
-    supportImgRow:[{src:IMG_LONGSLEEVE,label:'長袖長褲運動服'},{src:IMG_RAINCOAT,label:'雨衣'}],
+    supportImgRow:null,
     supportTip:'多感官輸入加上有意義的斷句，讓人有效連結字音跟字義！',
     next:'s-sec2-intro',showAnswerAfter:true,
   },
@@ -743,6 +743,15 @@ let currentStage=null, selectedAnswers=[], droppedItems=[], stageSubmitted=false
 
 // ── NAVIGATION ──
 function goto(id){
+  // Clean up ruler listeners before switching screen
+  if(document._rulerMouseMove){
+    document.removeEventListener('mousemove', document._rulerMouseMove);
+    document._rulerMouseMove = null;
+  }
+  if(document._rulerTouchMove){
+    document.removeEventListener('touchmove', document._rulerTouchMove, {passive:false});
+    document._rulerTouchMove = null;
+  }
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   const el=document.getElementById(id);
   if(el){el.classList.add('active');window.scrollTo(0,0);}
@@ -875,25 +884,42 @@ function renderStage(id){
   // ── DRAG ──
   if(s.type==='drag'){
     const items=shuffle(s.dragItems);
-    html+=`<div class="drag-wrap">
-      <div class="drag-items" id="drag-items">`;
-    items.forEach(it=>{
-      html+=`<div class="drag-item" id="drag-${it.id}" draggable="true"
-        ondragstart="onDragStart(event,'${it.id}')">
-        <span>${it.emoji}</span>${it.label}
+    const boySrc=s.boyImg||'';
+    // Show support images if defined
+    if(s.supportImgRow){
+      html+=`<div class="img-row" style="margin-bottom:12px">`;
+      s.supportImgRow.forEach(item=>{
+        html+=`<div style="text-align:center"><img src="${item.src}" alt="${item.label}" style="max-height:100px;border-radius:8px;display:block;margin:0 auto"></div>`;
+      });
+      html+=`</div>`;
+    }
+    // Layout: boy image left, tap-grid right
+    html+=`<div style="display:flex;gap:12px;align-items:flex-start">`;
+    if(boySrc){
+      html+=`<div style="flex-shrink:0;text-align:center">
+        <img src="${boySrc}" alt="學童" style="height:160px;object-fit:contain;border-radius:10px;display:block">
+        <div style="font-size:11px;color:var(--mid);font-weight:700;margin-top:4px">選好後按確認</div>
       </div>`;
+    }
+    html+=`<div style="flex:1;display:flex;flex-direction:column;gap:8px">`;
+    html+=`<div style="font-size:12px;color:var(--mid);font-weight:700">點選要穿的服裝（可複選）</div>`;
+    html+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px" id="drag-items">`;
+    items.forEach(it=>{
+      html+=`<button class="opt-btn" id="drag-${it.id}"
+        data-dragid="${it.id}"
+        onclick="tapSelectItem('${it.id}')"
+        style="padding:9px 10px;font-size:13px;justify-content:flex-start;width:100%">
+        <span class="check-dot"></span>
+        <span style="font-size:18px;margin:0 4px">${it.emoji}</span>
+        <span style="word-break:keep-all">${it.label}</span>
+      </button>`;
     });
-    html+=`</div>
-      <div class="drop-area">
-        <img class="drop-boy" src="${s.boyImg||''}" alt="學童">
-        <div class="drop-zone" id="drop-zone"
-          ondragover="event.preventDefault();this.classList.add('over')"
-          ondragleave="this.classList.remove('over')"
-          ondrop="onDrop(event)">
-          <span class="drop-hint-text" id="drop-hint">把衣服拖過來</span>
-        </div>
-      </div>
+    html+=`</div>`;
+    html+=`<div style="font-size:12px;color:var(--mid);font-weight:700;margin-top:2px">已選擇：</div>`;
+    html+=`<div id="drop-zone" style="min-height:36px;background:rgba(255,255,255,.6);border:2px dashed #CCC;border-radius:10px;padding:8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+      <span id="drop-hint" style="font-size:12px;color:#AAA">尚未選擇</span>
     </div>`;
+    html+=`</div></div>`;
   }
 
   html+=`<div id="fb-area"></div>
@@ -974,34 +1000,50 @@ function toggleOpt(label, type){
 }
 
 // ── DRAG ──
-function onDragStart(e,id){
-  e.dataTransfer.setData('text/plain',id);
-  document.getElementById('drag-'+id)?.classList.add('dragging');
-}
-function onDrop(e){
-  e.preventDefault();
-  const zone=document.getElementById('drop-zone');
-  zone?.classList.remove('over');
-  const id=e.dataTransfer.getData('text/plain');
-  if(!id||droppedItems.includes(id)) return;
-  const src=document.getElementById('drag-'+id);
-  if(src?.classList.contains('used')) return;
-  droppedItems.push(id);
-  src?.classList.add('used');
+// Tap-to-select for drag stages (mobile-friendly)
+function tapSelectItem(id){
+  if(stageSubmitted) return;
   const s=STAGES[currentStage];
+  if(!s||s.type!=='drag') return;
+  const btn=document.getElementById('drag-'+id);
+  if(!btn) return;
   const item=s.dragItems.find(x=>x.id===id);
   if(!item) return;
-  document.getElementById('drop-hint')?.remove();
-  const el=document.createElement('div');
-  el.className='dropped-item'; el.id='dropped-'+id;
-  el.innerHTML=`<span>${item.emoji}</span><span>${item.label}</span><span class="drop-rm" onclick="removeDropped('${id}')">✕</span>`;
-  document.getElementById('drop-zone')?.appendChild(el);
+
+  if(droppedItems.includes(id)){
+    // Deselect
+    droppedItems=droppedItems.filter(x=>x!==id);
+    btn.classList.remove('selected');
+    const dot=btn.querySelector('.check-dot');
+    if(dot) dot.textContent='';
+    document.getElementById('dropped-'+id)?.remove();
+    if(droppedItems.length===0){
+      const hint=document.getElementById('drop-hint');
+      if(hint){hint.style.display='';} else {
+        const h=document.createElement('span');
+        h.id='drop-hint'; h.style.fontSize='12px'; h.style.color='#AAA';
+        h.textContent='尚未選擇';
+        document.getElementById('drop-zone')?.appendChild(h);
+      }
+    }
+  } else {
+    // Select
+    droppedItems.push(id);
+    btn.classList.add('selected');
+    const dot=btn.querySelector('.check-dot');
+    if(dot){dot.textContent='✓';}
+    const hint=document.getElementById('drop-hint');
+    if(hint) hint.style.display='none';
+    const el=document.createElement('div');
+    el.className='dropped-item'; el.id='dropped-'+id;
+    el.innerHTML=`<span>${item.emoji}</span><span style="font-size:12px;margin:0 2px">${item.label}</span><span class="drop-rm" onclick="tapSelectItem('${id}')">✕</span>`;
+    document.getElementById('drop-zone')?.appendChild(el);
+  }
 }
-function removeDropped(id){
-  droppedItems=droppedItems.filter(x=>x!==id);
-  document.getElementById('dropped-'+id)?.remove();
-  document.getElementById('drag-'+id)?.classList.remove('used');
-}
+// Keep stub for compatibility
+function onDragStart(e,id){}
+function onDrop(e){ e.preventDefault(); }
+function removeDropped(id){ tapSelectItem(id); }
 
 // ── RULER ──
 function initRuler(){
