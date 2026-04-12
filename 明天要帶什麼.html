@@ -92,7 +92,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--dark);min-height:1
 
 /* ── BLACKBOARD ── */
 .bb-wrap{position:relative;background:#2d4a2d;border-radius:12px;
-  padding:20px 18px;border:5px solid #5a3e1b;margin:12px 0;overflow:hidden;cursor:crosshair}
+  padding:20px 18px;border:5px solid #5a3e1b;margin:12px 0;overflow:hidden;cursor:crosshair;touch-action:none}
 .bb-text{color:#e8f5e8;font-family:var(--font);white-space:pre-line}
 .bb-crowded{font-size:21px;line-height:.9;letter-spacing:-2px;word-spacing:-4px;font-weight:900}
 .bb-normal{font-size:16px;line-height:2;letter-spacing:.5px;font-weight:700}
@@ -754,11 +754,11 @@ function goto(id){
     document.removeEventListener('mousemove', document._rulerMouseMove);
     document._rulerMouseMove = null;
   }
-  // Touch listener lives on bb element — remove from it
-  const _bb = document.getElementById('bb-wrap');
-  if(_bb && _bb._rulerTouchMove){
-    _bb.removeEventListener('touchmove', _bb._rulerTouchMove, {passive:false});
-    _bb._rulerTouchMove = null;
+  // Touch listener lives on ruler-touch capture layer
+  const _tl = document.getElementById('ruler-touch');
+  if(_tl){
+    _tl._ts && _tl.removeEventListener('touchstart', _tl._ts);
+    _tl._tm && _tl.removeEventListener('touchmove', _tl._tm);
   }
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   const el=document.getElementById(id);
@@ -848,7 +848,8 @@ function renderStage(id){
         <div class="ruler-top" id="ruler-top" style="top:0;height:0"></div>
         <div class="ruler-window" id="ruler-win" style="top:0;height:28px"></div>
         <div class="ruler-bottom" id="ruler-bot" style="top:28px;bottom:0;height:calc(100% - 28px)"></div>
-      </div>`;
+      </div>
+      <div id="ruler-touch" style="position:absolute;inset:0;z-index:20;cursor:crosshair;touch-action:none;-webkit-user-select:none;user-select:none"></div>`;
     html+=`</div>`;
   }
   html+=`<div class="question-text" style="margin-top:12px">${s.question}</div>`;
@@ -1031,22 +1032,30 @@ function initRuler(){
     if(botEl){botEl.style.top=botTop+'px';botEl.style.height=Math.max(0,bbH-botTop)+'px';}
   }
   function onMouseMove(e){ updateRuler(e.clientY); }
-  function onTouchMove(e){
-    e.preventDefault();
-    updateRuler(e.touches[0].clientY);
-  }
+  function onTouchStart(e){ e.preventDefault(); updateRuler(e.touches[0].clientY); }
+  function onTouchMoveRuler(e){ e.preventDefault(); updateRuler(e.touches[0].clientY); }
 
   // Remove old listeners
   document._rulerMouseMove && document.removeEventListener('mousemove', document._rulerMouseMove);
-  bb._rulerTouchMove && bb.removeEventListener('touchmove', bb._rulerTouchMove, {passive:false});
+  const oldTL = document.getElementById('ruler-touch');
+  if(oldTL){
+    oldTL._ts && oldTL.removeEventListener('touchstart', oldTL._ts);
+    oldTL._tm && oldTL.removeEventListener('touchmove', oldTL._tm);
+  }
 
-  // Mouse: listen on document (works everywhere on desktop)
+  // Mouse: document-level (desktop)
   document._rulerMouseMove = onMouseMove;
   document.addEventListener('mousemove', onMouseMove);
 
-  // Touch: listen ONLY on bb element → passive:false works reliably, outside bb scrolls freely
-  bb._rulerTouchMove = onTouchMove;
-  bb.addEventListener('touchmove', onTouchMove, {passive:false});
+  // Touch: bind to the transparent capture layer (sits above bb, outside overflow:hidden)
+  // This is the most reliable cross-browser approach
+  const touchLayer = document.getElementById('ruler-touch');
+  if(touchLayer){
+    touchLayer._ts = onTouchStart;
+    touchLayer._tm = onTouchMoveRuler;
+    touchLayer.addEventListener('touchstart', onTouchStart, {passive:false});
+    touchLayer.addEventListener('touchmove', onTouchMoveRuler, {passive:false});
+  }
   const r=bb.getBoundingClientRect();
   updateRuler(r.top + r.height/2);
 }
