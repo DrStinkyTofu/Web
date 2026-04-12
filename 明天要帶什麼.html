@@ -754,9 +754,11 @@ function goto(id){
     document.removeEventListener('mousemove', document._rulerMouseMove);
     document._rulerMouseMove = null;
   }
-  if(document._rulerTouchMove){
-    document.removeEventListener('touchmove', document._rulerTouchMove, {passive:false});
-    document._rulerTouchMove = null;
+  // Touch listener lives on bb element — remove from it
+  const _bb = document.getElementById('bb-wrap');
+  if(_bb && _bb._rulerTouchMove){
+    _bb.removeEventListener('touchmove', _bb._rulerTouchMove, {passive:false});
+    _bb._rulerTouchMove = null;
   }
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   const el=document.getElementById(id);
@@ -1030,18 +1032,21 @@ function initRuler(){
   }
   function onMouseMove(e){ updateRuler(e.clientY); }
   function onTouchMove(e){
-    const touch=e.touches[0];
-    const r=bb.getBoundingClientRect();
-    const inBB=touch.clientX>=r.left&&touch.clientX<=r.right&&
-               touch.clientY>=r.top&&touch.clientY<=r.bottom;
-    if(inBB){ e.preventDefault(); updateRuler(touch.clientY); }
+    e.preventDefault();
+    updateRuler(e.touches[0].clientY);
   }
+
+  // Remove old listeners
   document._rulerMouseMove && document.removeEventListener('mousemove', document._rulerMouseMove);
-  document._rulerTouchMove && document.removeEventListener('touchmove', document._rulerTouchMove, {passive:false});
+  bb._rulerTouchMove && bb.removeEventListener('touchmove', bb._rulerTouchMove, {passive:false});
+
+  // Mouse: listen on document (works everywhere on desktop)
   document._rulerMouseMove = onMouseMove;
-  document._rulerTouchMove = onTouchMove;
   document.addEventListener('mousemove', onMouseMove);
-  document.addEventListener('touchmove', onTouchMove, {passive:false});
+
+  // Touch: listen ONLY on bb element → passive:false works reliably, outside bb scrolls freely
+  bb._rulerTouchMove = onTouchMove;
+  bb.addEventListener('touchmove', onTouchMove, {passive:false});
   const r=bb.getBoundingClientRect();
   updateRuler(r.top + r.height/2);
 }
