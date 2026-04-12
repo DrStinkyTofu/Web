@@ -91,8 +91,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--dark);min-height:1
 .timer-hint{font-size:12px;color:var(--mid);font-weight:700}
 
 /* ── BLACKBOARD ── */
+.bb-outer{position:relative;margin:12px 0}
 .bb-wrap{position:relative;background:#2d4a2d;border-radius:12px;
-  padding:20px 18px;border:5px solid #5a3e1b;margin:12px 0;overflow:hidden;cursor:crosshair;touch-action:none}
+  padding:20px 18px;border:5px solid #5a3e1b;overflow:hidden;cursor:crosshair}
 .bb-text{color:#e8f5e8;font-family:var(--font);white-space:pre-line}
 .bb-crowded{font-size:21px;line-height:.9;letter-spacing:-2px;word-spacing:-4px;font-weight:900}
 .bb-normal{font-size:16px;line-height:2;letter-spacing:.5px;font-weight:700}
@@ -100,7 +101,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--dark);min-height:1
 .bb-glow{text-shadow:0 0 8px rgba(180,220,180,.9),0 0 18px rgba(140,200,140,.6),0 0 32px rgba(100,180,100,.35)}
 .bb-img{display:block;margin:8px auto 0;max-width:94%;border-radius:6px}
 /* Reading ruler: dark overlay top + highlight row + dark overlay bottom */
-.ruler-overlay{position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none;z-index:10;overflow:hidden}
+.ruler-overlay{position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none;z-index:10;overflow:hidden;border-radius:12px}
 .ruler-top{position:absolute;left:0;right:0;top:0;background:rgba(10,28,10,.80);pointer-events:none}
 .ruler-bottom{position:absolute;left:0;right:0;background:rgba(10,28,10,.80);pointer-events:none}
 .ruler-window{position:absolute;left:0;right:0;background:rgba(255,255,200,.10);
@@ -831,7 +832,7 @@ function renderStage(id){
     </div>`;
   }
   if(s.bbMode){
-    html+=`<div class="bb-wrap" id="bb-wrap">`;
+    html+=`<div class="bb-outer" id="bb-outer"><div class="bb-wrap" id="bb-wrap">`;
     if(s.bbMode==='crowded')
       html+=`<div class="bb-text bb-crowded">${s.bbText.replace(/\n/g,'<br>')}</div>`;
     else if(s.bbMode==='normal')
@@ -843,6 +844,7 @@ function renderStage(id){
     } else if(s.bbMode==='spirit232'){
       html+=`<div class="bb-text bb-normal" style="margin-bottom:8px">自然課戶外上課，請帶</div><img class="bb-img" src="${s.bbImg232}" alt="精靈體文字" style="max-height:180px;border-radius:6px;width:100%;object-fit:contain"><div class="bb-text bb-normal" style="margin-top:8px;font-size:12px;opacity:.75">💡 其實是注音拼音啦，跟著老師的聲音一起指讀吧！</div>`;
     }
+    html+=`</div>`;
     if(s.hasRuler) html+=`
       <div class="ruler-overlay" id="ruler-overlay">
         <div class="ruler-top" id="ruler-top" style="top:0;height:0"></div>
@@ -1019,9 +1021,11 @@ function initRuler(){
   const LINE_H=34; // px height of highlight window — about 1 line tall
 
   function updateRuler(clientY){
-    const r=bb.getBoundingClientRect();
-    const bbH=bb.offsetHeight;
-    const y=Math.min(Math.max(clientY-r.top, LINE_H/2), bbH-LINE_H/2);
+    const outer=document.getElementById('bb-outer');
+    const ref=outer||bb;
+    const r=ref.getBoundingClientRect();
+    const H=ref.offsetHeight;
+    const y=Math.min(Math.max(clientY-r.top, LINE_H/2), H-LINE_H/2);
     const winTop=y-LINE_H/2;
     const botTop=winTop+LINE_H;
     const topEl=document.getElementById('ruler-top');
@@ -1029,7 +1033,7 @@ function initRuler(){
     const botEl=document.getElementById('ruler-bot');
     if(topEl){topEl.style.top='0px';topEl.style.height=Math.max(0,winTop)+'px';}
     if(winEl){winEl.style.top=winTop+'px';winEl.style.height=LINE_H+'px';}
-    if(botEl){botEl.style.top=botTop+'px';botEl.style.height=Math.max(0,bbH-botTop)+'px';}
+    if(botEl){botEl.style.top=botTop+'px';botEl.style.height=Math.max(0,H-botTop)+'px';}
   }
   function onMouseMove(e){ updateRuler(e.clientY); }
   function onTouchStart(e){ e.preventDefault(); updateRuler(e.touches[0].clientY); }
@@ -1056,8 +1060,9 @@ function initRuler(){
     touchLayer.addEventListener('touchstart', onTouchStart, {passive:false});
     touchLayer.addEventListener('touchmove', onTouchMoveRuler, {passive:false});
   }
-  const r=bb.getBoundingClientRect();
-  updateRuler(r.top + r.height/2);
+  const outerEl=document.getElementById('bb-outer')||bb;
+  const rr=outerEl.getBoundingClientRect();
+  updateRuler(rr.top + rr.height/2);
 }
 function disableAll(){
   document.querySelectorAll('.opt-btn').forEach(b=>b.disabled=true);
