@@ -99,6 +99,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--dark);min-height:1
 .bb-normal{font-size:16px;line-height:2;letter-spacing:.5px;font-weight:700}
 .bb-faded{font-size:16px;line-height:2;font-weight:700;color:rgba(180,210,180,.42)}
 .bb-glow{text-shadow:0 0 8px rgba(180,220,180,.9),0 0 18px rgba(140,200,140,.6),0 0 32px rgba(100,180,100,.35)}
+.bb-lines{display:flex;flex-direction:column}
+.bb-line{padding:4px 0;cursor:pointer;border-radius:4px;transition:background .1s;line-height:2;font-size:16px;font-weight:700;letter-spacing:.5px}
+.bb-line:active{background:rgba(255,255,100,.1)}
 .bb-img{display:block;margin:8px auto 0;max-width:94%;border-radius:6px}
 /* Reading ruler: dark overlay top + highlight row + dark overlay bottom */
 .ruler-overlay{position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none;z-index:10;overflow:hidden;border-radius:12px}
@@ -107,6 +110,14 @@ body{font-family:var(--font);background:var(--bg);color:var(--dark);min-height:1
 .ruler-window{position:absolute;left:0;right:0;background:rgba(255,255,200,.10);
   border-top:2px solid rgba(255,225,60,.85);border-bottom:2px solid rgba(255,225,60,.85);
   box-shadow:0 0 12px rgba(255,225,60,.2) inset;pointer-events:none}
+/* Full-screen ruler bar (mobile): fixed horizontal bar across entire viewport */
+.ruler-bar{display:none;position:fixed;left:0;right:0;height:36px;
+  background:rgba(255,230,80,.28);
+  border-top:2px solid rgba(255,200,0,.75);
+  border-bottom:2px solid rgba(255,200,0,.75);
+  pointer-events:none;z-index:9999;
+  box-shadow:0 0 0 9999px rgba(0,0,0,.45);
+  transition:top .08s linear}
 
 /* ── SUPPORT IMG ── */
 .support-imgs{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:10px 0}
@@ -209,16 +220,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--dark);min-height:1
 .strategy-chip{background:var(--cream);border-radius:10px;padding:10px 12px;
   font-size:13px;font-weight:700;display:flex;align-items:flex-start;gap:6px;line-height:1.5}
 
-.ruler-btn-row{display:none;align-items:center;justify-content:center;gap:12px;
-  margin-top:8px;padding:6px 0}
-.ruler-btn{background:#2d4a2d;color:#e8f5e8;border:none;border-radius:8px;
-  width:44px;height:44px;font-size:20px;cursor:pointer;font-weight:900;
-  display:flex;align-items:center;justify-content:center;
-  -webkit-tap-highlight-color:transparent}
-.ruler-btn:active{background:#1a3020}
-@media(hover:none) and (pointer:coarse){
-  .ruler-btn-row{display:flex}
-}
+
 @media(max-width:420px){
   .options-grid{grid-template-columns:1fr}
   .score-num{font-size:32px}
@@ -248,6 +250,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--dark);min-height:1
 </style>
 </head>
 <body>
+<!-- Full-screen ruler bar (mobile 2-2-2) -->
+<div id="ruler-bar" class="ruler-bar"></div>
 
 <!-- INTRO -->
 <div id="s-intro" class="screen active" style="background:linear-gradient(160deg,#FFF6ED,#FFF0E0);min-height:100vh;justify-content:center;align-items:center;text-align:center">
@@ -767,7 +771,10 @@ function goto(id){
     document.removeEventListener('mousemove', document._rulerMouseMove);
     document._rulerMouseMove = null;
   }
-  window._moveRulerFn = null;
+  const _rb = document.getElementById('ruler-bar');
+  if(_rb) _rb.style.display = 'none';
+  document._rulerMouseMove && document.removeEventListener('mousemove', document._rulerMouseMove);
+  document._rulerMouseMove = null;
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   const el=document.getElementById(id);
   if(el){el.classList.add('active');window.scrollTo(0,0);}
@@ -844,8 +851,19 @@ function renderStage(id){
       html+=`<div class="bb-text bb-crowded">${s.bbText.replace(/\n/g,'<br>')}</div>`;
     else if(s.bbMode==='normal')
       html+=`<div class="bb-text bb-normal">${s.bbText.replace(/\n/g,'<br>')}</div>`;
-    else if(s.bbMode==='faded')
-      html+=`<div class="bb-text bb-faded bb-glow">${s.bbText.replace(/\n/g,'<br>')}</div>`;
+    else if(s.bbMode==='faded'){
+      if(s.hasRuler){
+        // Split into clickable lines for tap-to-ruler
+        const lines = s.bbText.split('\n');
+        html+=`<div class="bb-text bb-faded bb-glow bb-lines" id="bb-lines">`;
+        lines.forEach((line,i)=>{
+          html+=`<div class="bb-line" data-line="${i}" onclick="rulerToLine(this)">${line}</div>`;
+        });
+        html+=`</div>`;
+      } else {
+        html+=`<div class="bb-text bb-faded bb-glow">${s.bbText.replace(/\n/g,'<br>')}</div>`;
+      }
+    }
     else if(s.bbMode==='spirit'){
       html+=`<div class="bb-text bb-normal" style="margin-bottom:8px">自然課戶外上課，請帶</div><img class="bb-img" src="${s.bbImg}" alt="精靈體" class="bb-spirit-img">`;
     } else if(s.bbMode==='spirit232'){
@@ -860,11 +878,7 @@ function renderStage(id){
       </div>`;
     html+=`</div>`;
     // Mobile: up/down buttons to move ruler
-    html+=`<div class="ruler-btn-row" id="ruler-btn-row">
-      <span style="font-size:12px;color:var(--mid);font-weight:700">移動閱讀尺</span>
-      <button class="ruler-btn" onclick="moveRuler(-1)" aria-label="上移">▲</button>
-      <button class="ruler-btn" onclick="moveRuler(1)" aria-label="下移">▼</button>
-    </div>`;
+
   }
   html+=`<div class="question-text" style="margin-top:12px">${s.question}</div>`;
   if(s.type==='single'||s.type==='multi'){
@@ -1027,52 +1041,52 @@ function onDragStart(e,id){}
 function onDrop(e){ e.preventDefault(); }
 function removeDropped(id){ tapSelectItem(id); }
 function initRuler(){
-  const bb = document.getElementById('bb-wrap');
-  const outer = document.getElementById('bb-outer');
-  const overlay = document.getElementById('ruler-overlay');
-  if(!bb || !overlay) return;
-  const LINE_H = 34;
-  let rulerY = 0; // tracks current position in px from top of bb-outer
-
-  function updateRuler(px){
-    const ref = outer || bb;
-    const H = ref.offsetHeight;
-    rulerY = Math.min(Math.max(px, LINE_H/2), H - LINE_H/2);
-    const winTop = rulerY - LINE_H/2;
-    const botTop = winTop + LINE_H;
-    const topEl = document.getElementById('ruler-top');
-    const winEl = document.getElementById('ruler-win');
-    const botEl = document.getElementById('ruler-bot');
-    if(topEl){ topEl.style.top='0'; topEl.style.height=Math.max(0,winTop)+'px'; }
-    if(winEl){ winEl.style.top=winTop+'px'; winEl.style.height=LINE_H+'px'; }
-    if(botEl){ botEl.style.top=botTop+'px'; botEl.style.height=Math.max(0,H-botTop)+'px'; }
-  }
-
-  // Desktop: mouse move over bb-outer
+  const LINE_H = 36;
+  // Desktop: mouse move positions ruler continuously
   function onMouseMove(e){
-    const ref = outer || bb;
-    const r = ref.getBoundingClientRect();
-    updateRuler(e.clientY - r.top);
+    setRulerY(e.clientY);
   }
   document._rulerMouseMove && document.removeEventListener('mousemove', document._rulerMouseMove);
   document._rulerMouseMove = onMouseMove;
   document.addEventListener('mousemove', onMouseMove);
 
-  // Store moveRuler globally for button clicks
-  const ref = outer || bb;
-  window._moveRulerFn = function(dir){
-    const STEP = Math.max(10, LINE_H * 0.6);
-    updateRuler(rulerY + dir * STEP);
-  };
-
-  // Init at centre
-  const H0 = (outer||bb).offsetHeight;
-  updateRuler(H0 / 2);
+  // Mobile: handled by rulerToLine() on click — no touch listeners needed
+  // Init at top of bb
+  const outer = document.getElementById('bb-outer');
+  if(outer){
+    const r = outer.getBoundingClientRect();
+    setRulerY(r.top + LINE_H);
+  }
 }
 
-function moveRuler(dir){
-  if(window._moveRulerFn) window._moveRulerFn(dir);
+function setRulerY(clientY){
+  const LINE_H = 36;
+  // Update fixed bar
+  const bar = document.getElementById('ruler-bar');
+  if(bar){ bar.style.top = Math.round(clientY - LINE_H/2)+'px'; bar.style.display='block'; }
+  // Update bb-overlay
+  const outer = document.getElementById('bb-outer');
+  if(!outer) return;
+  const r = outer.getBoundingClientRect();
+  const H = outer.offsetHeight;
+  const rel = Math.min(Math.max(clientY - r.top, LINE_H/2), H - LINE_H/2);
+  const winTop = rel - LINE_H/2;
+  const botTop = winTop + LINE_H;
+  const topEl = document.getElementById('ruler-top');
+  const winEl = document.getElementById('ruler-win');
+  const botEl = document.getElementById('ruler-bot');
+  if(topEl){ topEl.style.top='0'; topEl.style.height=Math.max(0,winTop)+'px'; }
+  if(winEl){ winEl.style.top=winTop+'px'; winEl.style.height=LINE_H+'px'; }
+  if(botEl){ botEl.style.top=botTop+'px'; botEl.style.height=Math.max(0,H-botTop)+'px'; }
 }
+
+function rulerToLine(el){
+  // Called when user taps a line — move ruler to that line's vertical centre
+  const r = el.getBoundingClientRect();
+  const midY = r.top + r.height/2;
+  setRulerY(midY);
+}
+
 
 function disableAll(){
   document.querySelectorAll('.opt-btn').forEach(b=>b.disabled=true);
