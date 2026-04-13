@@ -782,6 +782,13 @@ function goto(id){
   if(_rb) _rb.style.display = 'none';
   document._rulerMouseMove && document.removeEventListener('mousemove', document._rulerMouseMove);
   document._rulerMouseMove = null;
+  const _bo = document.getElementById('bb-outer');
+  if(_bo){
+    _bo._rulerMouseMove && _bo.removeEventListener('mousemove', _bo._rulerMouseMove);
+    _bo._rulerMouseLeave && _bo.removeEventListener('mouseleave', _bo._rulerMouseLeave);
+    _bo._rulerMouseMove = null;
+    _bo._rulerMouseLeave = null;
+  }
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   const el=document.getElementById(id);
   if(el){el.classList.add('active');window.scrollTo(0,0);}
@@ -1049,21 +1056,36 @@ function onDrop(e){ e.preventDefault(); }
 function removeDropped(id){ tapSelectItem(id); }
 function initRuler(){
   const LINE_H = 36;
-  // Desktop: mouse move positions ruler continuously
-  function onMouseMove(e){
-    setRulerY(e.clientY);
-  }
-  document._rulerMouseMove && document.removeEventListener('mousemove', document._rulerMouseMove);
-  document._rulerMouseMove = onMouseMove;
-  document.addEventListener('mousemove', onMouseMove);
-
-  // Mobile: handled by rulerToLine() on click — no touch listeners needed
-  // Init at top of bb
   const outer = document.getElementById('bb-outer');
-  if(outer){
-    const r = outer.getBoundingClientRect();
-    setRulerY(r.top + LINE_H);
-  }
+  if(!outer) return;
+
+  // Desktop: mousemove only INSIDE bb-outer; hide ruler when mouse leaves
+  function onMouseMove(e){ setRulerY(e.clientY); }
+  function onMouseLeave(){ hideRuler(); }
+
+  // Clean up old listeners
+  document._rulerMouseMove && document.removeEventListener('mousemove', document._rulerMouseMove);
+  outer._rulerMouseMove && outer.removeEventListener('mousemove', outer._rulerMouseMove);
+  outer._rulerMouseLeave && outer.removeEventListener('mouseleave', outer._rulerMouseLeave);
+
+  // Bind to bb-outer only
+  outer._rulerMouseMove = onMouseMove;
+  outer._rulerMouseLeave = onMouseLeave;
+  outer.addEventListener('mousemove', onMouseMove);
+  outer.addEventListener('mouseleave', onMouseLeave);
+
+  // Mobile: handled by rulerToLine() on tap — no listeners needed
+  // Init hidden (ruler shows on first mouse entry or tap)
+  hideRuler();
+}
+
+function hideRuler(){
+  const topEl = document.getElementById('ruler-top');
+  const winEl = document.getElementById('ruler-win');
+  const botEl = document.getElementById('ruler-bot');
+  if(topEl) topEl.style.height='0';
+  if(winEl) winEl.style.height='0';
+  if(botEl) botEl.style.height='0';
 }
 
 function setRulerY(clientY){
