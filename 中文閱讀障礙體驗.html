@@ -97,10 +97,24 @@ body{font-family:var(--font);background:var(--bg);color:var(--dark);min-height:1
 .bb-text{color:#e8f5e8;font-family:var(--font);white-space:pre-line}
 .bb-crowded{font-size:21px;line-height:.9;letter-spacing:-2px;word-spacing:-4px;font-weight:900}
 .bb-normal{font-size:16px;line-height:2;letter-spacing:.5px;font-weight:700}
-.bb-faded{font-size:16px;line-height:2;font-weight:700;color:rgba(180,210,180,.42)}
-.bb-glow{text-shadow:0 0 8px rgba(180,220,180,.9),0 0 18px rgba(140,200,140,.6),0 0 32px rgba(100,180,100,.35)}
+.bb-faded{
+  font-size:15px;line-height:1.95;font-weight:700;
+  color:rgba(170,205,170,.22);
+  filter:blur(0.8px);
+  letter-spacing:0.2px;
+  text-shadow:0 0 4px rgba(140,190,140,.3);
+}
+.bb-glow{text-shadow:0 0 6px rgba(180,220,180,.8),0 0 14px rgba(140,200,140,.5),0 0 28px rgba(100,180,100,.3)}
 .bb-lines{display:flex;flex-direction:column}
-.bb-line{padding:4px 0;cursor:pointer;border-radius:4px;transition:background .1s;line-height:2;font-size:16px;font-weight:700;letter-spacing:.5px}
+.bb-line{padding:6px 2px;cursor:pointer;border-radius:4px;transition:all .2s;
+  line-height:1.95;font-size:15px;font-weight:700;letter-spacing:.2px;
+  color:rgba(170,205,170,.22);filter:blur(0.8px);
+  text-shadow:0 0 4px rgba(140,190,140,.3)}
+.bb-line.ruler-active{
+  color:#F0FFF0;
+  filter:none;
+  text-shadow:0 0 1px rgba(255,255,255,.3);
+  background:rgba(255,255,200,.06)}
 .bb-line:active{background:rgba(255,255,100,.1)}
 .bb-img{display:block;margin:8px auto 0;max-width:94%;border-radius:6px}
 /* Reading ruler: dark overlay top + highlight row + dark overlay bottom */
@@ -110,14 +124,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--dark);min-height:1
 .ruler-window{position:absolute;left:0;right:0;background:rgba(255,255,200,.10);
   border-top:2px solid rgba(255,225,60,.85);border-bottom:2px solid rgba(255,225,60,.85);
   box-shadow:0 0 12px rgba(255,225,60,.2) inset;pointer-events:none}
-/* Full-screen ruler bar (mobile): fixed horizontal bar across entire viewport */
-.ruler-bar{display:none;position:fixed;left:0;right:0;height:36px;
-  background:rgba(255,230,80,.28);
-  border-top:2px solid rgba(255,200,0,.75);
-  border-bottom:2px solid rgba(255,200,0,.75);
-  pointer-events:none;z-index:9999;
-  box-shadow:0 0 0 9999px rgba(0,0,0,.45);
-  transition:top .08s linear}
+.ruler-bar{display:none!important}
 
 /* ── SUPPORT IMG ── */
 .support-imgs{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:10px 0}
@@ -617,7 +624,7 @@ const STAGES = {
     concept:'聲韻覺識困難的人，大腦很難自動化拆解聽到的聲音與音調。',
     conceptSub:'如果我們聽到的聲音很難辨識……',
     situation:'老師的語速很快，讓人要更仔細聽在說什麼。',
-    question:'請把正確的服裝拖曳到小朋友身上',
+    question:'請幫小朋友選擇正確服裝',
     type:'drag',
     dragItems:[
       {id:'d-ls',label:'長袖運動服',emoji:'🥼',correct:true},
@@ -640,7 +647,7 @@ const STAGES = {
     concept:'這次老師將資訊分組，搭配圖片說明。',
     conceptSub:'',
     situation:'老師用有意義的斷句、物品實體連結重新說了一次。',
-    question:'請把正確的服裝拖曳到小朋友身上',
+    question:'請幫小朋友選擇正確服裝',
     type:'drag',
     dragItems:[
       {id:'d2-ls',label:'長袖運動服',emoji:'🥼',correct:true},
@@ -714,7 +721,7 @@ const STAGES = {
     tag:'✨ 支持策略',
     concept:'想辦法集中注意力，降低視覺疲勞感。',
     conceptSub:'',
-    situation:'這次你有一把閱讀尺，移動滑鼠來輔助閱讀！',
+    situation:'這次你有把閱讀尺，點選你要閱讀的內容來使用。',
     question:'你是三號，請選擇你要帶什麼去排隊？',
     type:'single',
     options:['黑筆','鉛筆','紅筆','藍筆'],
@@ -1061,10 +1068,6 @@ function initRuler(){
 
 function setRulerY(clientY){
   const LINE_H = 36;
-  // Update fixed bar
-  const bar = document.getElementById('ruler-bar');
-  if(bar){ bar.style.top = Math.round(clientY - LINE_H/2)+'px'; bar.style.display='block'; }
-  // Update bb-overlay
   const outer = document.getElementById('bb-outer');
   if(!outer) return;
   const r = outer.getBoundingClientRect();
@@ -1081,10 +1084,12 @@ function setRulerY(clientY){
 }
 
 function rulerToLine(el){
-  // Called when user taps a line — move ruler to that line's vertical centre
   const r = el.getBoundingClientRect();
   const midY = r.top + r.height/2;
   setRulerY(midY);
+  // Highlight the active line so text is readable through the ruler
+  document.querySelectorAll('.bb-line').forEach(l=>l.classList.remove('ruler-active'));
+  el.classList.add('ruler-active');
 }
 
 
