@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>露營背包大冒險｜學習風格小測驗</title>
+<style>
+  :root{
+    --bg: #F3F8F1;
+    --card: #FFFFFF;
+    --ink: #223A2E;
+    --muted: #6E8478;
+    --primary: #2F8F5B;
+    --primary-dark: #226B45;
+    --sun: #F2A93B;
+    --sky: #3E92CC;
+    --coral: #E2574C;
+    --line: #DCEAE1;
+    --shadow: 0 10px 28px rgba(34,58,46,0.10);
+  }
+  *{ box-sizing: border-box; }
+  html,body{
+    margin:0; padding:0; height:100%;
+    background: var(--bg);
+    font-family: "PingFang TC","Microsoft JhengHei","Heiti TC","Segoe UI",sans-serif;
+    color: var(--ink);
+    -webkit-tap-highlight-color: transparent;
+  }
+  #stage{
+    min-height: 100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding: 20px;
+  }
+  .card{
+    width: 100%;
+    max-width: 480px;
+    background: var(--card);
+    border-radius: 22px;
+    box-shadow: var(--shadow);
+    padding: 28px 24px 26px;
+    position: relative;
+    animation: pop .35s ease;
+  }
+  @keyframes pop{ from{ opacity:0; transform: translateY(8px) scale(.98);} to{opacity:1; transform:none;} }
+  @media (prefers-reduced-motion: reduce){
+    .card{ animation:none; }
+  }
+
+  .progress{
+    display:flex; justify-content:center; gap:10px; margin-bottom: 18px;
+  }
+  .progress .dot{
+    width: 38px; height: 38px; border-radius: 50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size: 18px;
+    background: var(--line);
+    color: var(--muted);
+    border: 2px solid transparent;
+    transition: all .25s ease;
+  }
+  .progress .dot.active{
+    background: #fff;
+    border-color: var(--primary);
+    color: var(--primary);
+    transform: scale(1.12);
+  }
+  .progress .dot.done{
+    background: var(--primary);
+    color: #fff;
+  }
+
+  h1{ font-size: 24px; line-height:1.4; margin: 0 0 8px; text-align:center; color: var(--primary-dark); }
+  h2{ font-size: 20px; margin: 0 0 6px; text-align:center; color: var(--primary-dark); }
+  p.sub{ text-align:center; color: var(--muted); font-size:16px; line-height:1.6; margin: 0 0 20px; }
+  .mascot{ font-size: 56px; text-align:center; margin-bottom: 6px; }
+
+  .btn{
+    display:block; width:100%; border:none; cursor:pointer;
+    background: var(--primary); color:#fff;
+    font-size: 19px; font-weight:600;
+    padding: 15px 18px; border-radius: 14px;
+    font-family: inherit;
+    transition: transform .12s ease, background .2s ease;
+  }
+  .btn:active{ transform: scale(.97); }
+  .btn:hover{ background: var(--primary-dark); }
+  .btn.secondary{ background: #fff; color: var(--primary); border: 2px solid var(--primary); }
+  .btn.secondary:hover{ background: #EFF8F2; }
+
+  .backpack-box{
+    background: #EAF5EC; border-radius: 18px; padding: 20px 12px;
+    display:grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+    margin-bottom: 18px;
+  }
+  .item-tile{
+    background:#fff; border-radius: 14px; padding: 10px 4px;
+    text-align:center; box-shadow: 0 3px 10px rgba(34,58,46,.08);
+  }
+  .item-emoji{ font-size: 32px; display:block; margin-bottom:4px; }
+  .item-label{ font-size: 12.5px; color: var(--ink); font-weight:600; }
+
+  .timerbar-wrap{ height: 8px; background: var(--line); border-radius: 6px; overflow:hidden; margin-bottom: 18px; }
+  .timerbar{ height:100%; background: var(--sun); width:100%; transform-origin: left; }
+
+  .speaker-wrap{ text-align:center; margin: 22px 0 26px; }
+  .speaker-icon{ font-size: 72px; display:inline-block; }
+  .speaker-icon.pulsing{ animation: pulse 1s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.12);} }
+  .listen-msg{ text-align:center; font-size: 16px; color: var(--muted); margin-top: 12px; }
+  .hint{ text-align:center; font-size: 13px; color: var(--muted); margin-top: 10px; }
+
+  .read-box{ background:#EAF2F8; border-radius:18px; padding:18px 20px; margin-bottom:18px; }
+  .read-box p{ font-size:17px; line-height:1.9; margin:0; }
+  .read-box b{ color: var(--sky); }
+
+  .k-zone{
+    background:#EAF5EC; border-radius:18px; padding:14px; margin-bottom:14px;
+    min-height: 76px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:center;
+  }
+  .k-zone .empty-msg{ color: var(--muted); font-size:14px; }
+  .k-chip{
+    background:#fff; border:2px dashed var(--sky); border-radius:14px;
+    padding: 10px 6px; text-align:center; font-size:13px; font-weight:600;
+    width: 66px; cursor:pointer; transition: transform .15s ease, opacity .2s ease;
+  }
+  .k-chip:active{ transform: scale(.94); }
+  .k-chip .e{ font-size: 24px; display:block; }
+  .k-packed{
+    background: var(--primary); color:#fff; border: none;
+    border-radius: 14px; padding: 9px 6px; text-align:center; font-size:12px; font-weight:600;
+    width: 62px; opacity: .95;
+  }
+  .k-packed .e{ font-size: 22px; display:block; }
+  .k-label{ text-align:center; font-size:14px; color:var(--muted); margin-bottom:8px; }
+
+  .opt{
+    display:block; width:100%; text-align:left;
+    background:#fff; border: 2px solid var(--line); border-radius:14px;
+    padding: 11px 16px; margin-bottom: 8px; font-size:16px; font-weight:600;
+    color: var(--ink); cursor:pointer; transition: all .15s ease;
+  }
+  .opt:hover{ border-color: var(--sky); }
+  .opt.correct{ background:#E8F6EC; border-color: var(--primary); color: var(--primary-dark); }
+  .opt.wrong{ background:#FCEAE8; border-color: var(--coral); color:#9C2E26; }
+  .opt[disabled]{ cursor:default; }
+
+  .feedback{ text-align:center; font-size:16px; font-weight:700; min-height:24px; margin: 4px 0 14px; }
+  .feedback.good{ color: var(--primary-dark); }
+  .feedback.bad{ color: var(--coral); }
+
+  .rate-row{ display:flex; gap:12px; justify-content:center; margin: 22px 0 6px; }
+  .rate-btn{
+    background:#fff; border: 2px solid var(--line); border-radius: 16px;
+    padding: 16px 10px; width: 100px; text-align:center; cursor:pointer;
+    transition: all .15s ease; font-size:14px; font-weight:600; color: var(--ink);
+  }
+  .rate-btn:hover{ border-color: var(--sun); transform: translateY(-2px); }
+  .rate-btn .e{ font-size:34px; display:block; margin-bottom:4px; }
+
+  .result-icon{ font-size: 72px; text-align:center; margin-bottom: 6px; }
+  .result-type{ text-align:center; font-size:26px; font-weight:800; color:var(--primary-dark); margin-bottom:10px; }
+  .result-desc{ background:#EAF5EC; border-radius:16px; padding:18px 18px; font-size:17px; line-height:1.8; margin-bottom: 16px; }
+  .result-tip{ font-size:14px; color: var(--muted); text-align:center; margin-bottom:20px; }
+
+  :focus-visible{ outline: 3px solid var(--sky); outline-offset:2px; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var ROUND_META = [
+    {key:'V', icon:'👀', label:'看一看'},
+    {key:'A', icon:'👂', label:'聽一聽'},
+    {key:'R', icon:'📖', label:'讀一讀'},
+    {key:'K', icon:'✋', label:'做一做'}
+  ];
+
+  var ROUND_TYPES = ['visual','audio','read','kinesthetic'];
+  var ROUND_TITLES = ['第 1 關：看一看','第 2 關：聽一聽','第 3 關：讀一讀','第 4 關：做一做'];
+
+  // 完整物品池：每次遊玩會重新洗牌抽取，確保每次玩到的物品都不同
+  var ITEM_POOL = [
+    {e:'⛺', l:'帳篷'}, {e:'🔦', l:'手電筒'}, {e:'🗺️', l:'地圖'}, {e:'🥤', l:'水壺'},
+    {e:'🧭', l:'指南針'}, {e:'⌚', l:'手錶'}, {e:'📻', l:'收音機'}, {e:'👓', l:'眼鏡'},
+    {e:'🩹', l:'急救包'}, {e:'🧤', l:'手套'}, {e:'🪢', l:'繩子'}, {e:'🍫', l:'巧克力'},
+    {e:'🥾', l:'登山鞋'}, {e:'🧢', l:'帽子'}, {e:'🌂', l:'雨傘'}, {e:'🔥', l:'火種'},
+    {e:'🧦', l:'襪子'}, {e:'🥫', l:'罐頭'}, {e:'🍎', l:'蘋果'}, {e:'🧃', l:'果汁'},
+    {e:'👕', l:'T恤'}, {e:'🪣', l:'水桶'}, {e:'🧻', l:'衛生紙'}, {e:'🔋', l:'電池'},
+    {e:'🕯️', l:'蠟燭'}, {e:'🧵', l:'針線包'}, {e:'🎣', l:'釣竿'}, {e:'🪁', l:'風箏'},
+    {e:'⚽', l:'足球'}, {e:'📷', l:'相機'}, {e:'🔑', l:'鑰匙'}, {e:'🪥', l:'牙刷'}
+  ];
+
+  var ITEMS_PER_ROUND = 6;
+
+  var RESULTS = {
+    V: { icon:'👀🖼️', name:'視覺型學習者',
+      desc:'你最會用「眼睛」來學習！圖片、顏色、圖表、心智圖，都能幫助你把東西記得更牢。',
+      tip:'小提醒：讀書時試試畫重點、畫圖表，或用不同顏色的筆做記號喔！' },
+    A: { icon:'👂🎧', name:'聽覺型學習者',
+      desc:'你最會用「耳朵」來學習！聽老師講解、跟著唸出聲音、和同學討論，都會讓你記得更清楚。',
+      tip:'小提醒：讀書時試試把內容唸出來，或錄音起來重複聽喔！' },
+    R: { icon:'📖✏️', name:'讀寫型學習者',
+      desc:'你最會用「文字」來學習！自己寫筆記、多讀幾次重點、列出清單，最適合你。',
+      tip:'小提醒：讀書時試試把重點抄下來，或用自己的話寫成筆記喔！' },
+    K: { icon:'✋🏃', name:'動覺型學習者',
+      desc:'你最會用「身體」來學習！動手做做看、邊做邊學、實際操作一次，你會記得最快。',
+      tip:'小提醒：讀書時試試做實驗、玩教具，或邊走邊背誦喔！' }
+  };
+
+  var scores = {V:0, A:0, R:0, K:0};
+  var roundIndex = 0;
+  var gameRounds = []; // 本次遊玩，每一關實際使用的物品
+  var stage = document.getElementById('stage');
+
+  function shuffle(arr){
+    var a = arr.slice();
+    for(var i=a.length-1;i>0;i--){
+      var j = Math.floor(Math.random()*(i+1));
+      var t=a[i]; a[i]=a[j]; a[j]=t;
+    }
+    return a;
+  }
+
+  function pickFrom(pool, n, excludeList){
+    var filtered = pool.filter(function(it){
+      return excludeList.every(function(ex){ return ex.l !== it.l; });
+    });
+    var shuffled = shuffle(filtered);
+    return shuffled.slice(0, n);
+  }
+
+  // 每次開始遊戲時，重新洗牌並分配 4 關 x 6 樣物品，確保每次都不一樣
+  function assignNewGameItems(){
+    var pool = shuffle(ITEM_POOL);
+    gameRounds = [];
+    for(var i=0;i<4;i++){
+      var slice = pool.slice(i*ITEMS_PER_ROUND, (i+1)*ITEMS_PER_ROUND);
+      gameRounds.push({
+        type: ROUND_TYPES[i],
+        title: ROUND_TITLES[i],
+        items: slice
+      });
+    }
+  }
+
+  function renderProgress(activeIdx){
+    var html = '<div class="progress">';
+    ROUND_META.forEach(function(m, i){
+      var cls = 'dot';
+      if(i < activeIdx) cls += ' done';
+      else if(i === activeIdx) cls += ' active';
+      html += '<div class="'+cls+'">'+(i<activeIdx ? '✓' : m.icon)+'</div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  function showStart(){
+    stage.innerHTML =
+      '<div class="card">'+
+        '<div class="mascot">🦕🎒</div>'+
+        '<h1>露營背包大冒險</h1>'+
+        '<p class="sub">跟著小恐龍一起收拾露營背包！<br>每一關會用不同的方式告訴你「背包裡有什麼」，<br>玩完就知道你最會用哪種方式記東西。</p>'+
+        '<button class="btn" id="startBtn">開始冒險！</button>'+
+      '</div>';
+    document.getElementById('startBtn').onclick = function(){
+      assignNewGameItems();
+      startRound(0);
+    };
+  }
+
+  function startRound(idx){
+    roundIndex = idx;
+    if(idx >= gameRounds.length){ return showResult(); }
+    var r = gameRounds[idx];
+    if(r.type === 'visual') return showVisual(r);
+    if(r.type === 'audio') return showAudio(r);
+    if(r.type === 'read') return showRead(r);
+    if(r.type === 'kinesthetic') return showKinesthetic(r);
+  }
+
+  function showVisual(r){
+    var tiles = r.items.map(function(it){
+      return '<div class="item-tile"><span class="item-emoji">'+it.e+'</span><span class="item-label">'+it.l+'</span></div>';
+    }).join('');
+    stage.innerHTML =
+      '<div class="card">'+
+        renderProgress(roundIndex)+
+        '<h2>'+r.title+'</h2>'+
+        '<p class="sub">仔細看看背包裡有什麼，6 秒後會收起來喔！</p>'+
+        '<div class="backpack-box">'+tiles+'</div>'+
+        '<div class="timerbar-wrap"><div class="timerbar" id="tbar"></div></div>'+
+      '</div>';
+
+    var bar = document.getElementById('tbar');
+    var duration = 6000;
+    bar.style.transition = 'width '+duration+'ms linear';
+    requestAnimationFrame(function(){ bar.style.width = '0%'; });
+    setTimeout(function(){ showQuiz(r); }, duration + 150);
+  }
+
+  function showAudio(r){
+    stage.innerHTML =
+      '<div class="card">'+
+        renderProgress(roundIndex)+
+        '<h2>'+r.title+'</h2>'+
+        '<p class="sub">戴上耳朵專心聽，背包裡有什麼東西？</p>'+
+        '<div class="speaker-wrap">'+
+          '<span class="speaker-icon" id="spk">🔊</span>'+
+          '<div class="listen-msg" id="listenMsg">準備好了嗎？</div>'+
+        '</div>'+
+        '<button class="btn" id="playBtn">點我開始聆聽</button>'+
+        '<div class="hint">（如果聽不清楚，可以再點一次）</div>'+
+      '</div>';
+
+    var played = false;
+    document.getElementById('playBtn').onclick = function(){
+      if(played) return;
+      played = true;
+      playAudioSequence(r);
+    };
+  }
+
+  function playAudioSequence(r){
+    var spk = document.getElementById('spk');
+    var msg = document.getElementById('listenMsg');
+    spk.classList.add('pulsing');
+    msg.textContent = '仔細聆聽中……';
+    var supportsTTS = ('speechSynthesis' in window);
+    var items = r.items;
+    var i = 0;
+
+    function speakNext(){
+      if(i >= items.length){
+        spk.classList.remove('pulsing');
+        msg.textContent = '收好了！準備回答問題';
+        setTimeout(function(){ showQuiz(r); }, 900);
+        return;
+      }
+      if(supportsTTS){
+        var u = new SpeechSynthesisUtterance(items[i].l);
+        u.lang = 'zh-TW';
+        u.rate = 0.85;
+        u.onend = function(){ i++; setTimeout(speakNext, 350); };
+        u.onerror = function(){ i++; setTimeout(speakNext, 900); };
+        window.speechSynthesis.speak(u);
+      } else {
+        i++; setTimeout(speakNext, 1100);
+      }
+    }
+    speakNext();
+  }
+
+  function showRead(r){
+    var text = r.items.map(function(it){ return '<b>'+it.l+'</b>'; }).join('、');
+    stage.innerHTML =
+      '<div class="card">'+
+        renderProgress(roundIndex)+
+        '<h2>'+r.title+'</h2>'+
+        '<p class="sub">仔細讀這段文字，記住背包裡有什麼！</p>'+
+        '<div class="read-box"><p>今天露營要帶的東西是：'+text+'，一樣都不能少喔！</p></div>'+
+        '<div class="timerbar-wrap"><div class="timerbar" id="tbar"></div></div>'+
+      '</div>';
+
+    var bar = document.getElementById('tbar');
+    var duration = 7000;
+    bar.style.transition = 'width '+duration+'ms linear';
+    requestAnimationFrame(function(){ bar.style.width = '0%'; });
+    setTimeout(function(){ showQuiz(r); }, duration + 150);
+  }
+
+  function showKinesthetic(r){
+    var packedCount = 0;
+    stage.innerHTML =
+      '<div class="card">'+
+        renderProgress(roundIndex)+
+        '<h2>'+r.title+'</h2>'+
+        '<p class="sub">點一下每樣東西，把它們放進背包！</p>'+
+        '<div class="k-label">還沒放進背包</div>'+
+        '<div class="k-zone" id="chipZone"></div>'+
+        '<div class="k-label">已經放進背包 🎒</div>'+
+        '<div class="k-zone" id="packZone"><span class="empty-msg">還是空的</span></div>'+
+      '</div>';
+
+    var chipZone = document.getElementById('chipZone');
+    var packZone = document.getElementById('packZone');
+
+    r.items.forEach(function(it){
+      var chip = document.createElement('div');
+      chip.className = 'k-chip';
+      chip.innerHTML = '<span class="e">'+it.e+'</span>'+it.l;
+      chip.onclick = function(){
+        chip.remove();
+        if(packZone.querySelector('.empty-msg')) packZone.innerHTML = '';
+        var packed = document.createElement('div');
+        packed.className = 'k-packed';
+        packed.innerHTML = '<span class="e">'+it.e+'</span>'+it.l;
+        packZone.appendChild(packed);
+        packedCount++;
+        if(packedCount === r.items.length){
+          setTimeout(function(){ showQuiz(r); }, 700);
+        }
+      };
+      chipZone.appendChild(chip);
+    });
+  }
+
+  function showQuiz(r){
+    var meta = ROUND_META[roundIndex];
+    var correct = r.items[Math.floor(Math.random()*r.items.length)];
+    var distractors = pickFrom(ITEM_POOL, 5, r.items);
+    var options = shuffle([correct].concat(distractors));
+
+    stage.innerHTML =
+      '<div class="card">'+
+        renderProgress(roundIndex)+
+        '<h2>小測驗</h2>'+
+        '<p class="sub">剛剛（'+meta.label+'）出現過哪一樣東西？</p>'+
+        '<div id="optWrap"></div>'+
+        '<div class="feedback" id="fb"></div>'+
+      '</div>';
+
+    var wrap = document.getElementById('optWrap');
+    var fb = document.getElementById('fb');
+    var answered = false;
+
+    options.forEach(function(opt){
+      var btn = document.createElement('button');
+      btn.className = 'opt';
+      btn.innerHTML = opt.e + '　' + opt.l;
+      btn.onclick = function(){
+        if(answered) return;
+        answered = true;
+        var allBtns = wrap.querySelectorAll('.opt');
+        allBtns.forEach(function(b){ b.disabled = true; });
+        var isCorrect = (opt.l === correct.l);
+        if(isCorrect){
+          btn.classList.add('correct');
+          fb.textContent = '答對了，太厲害了！';
+          fb.className = 'feedback good';
+        } else {
+          btn.classList.add('wrong');
+          allBtns.forEach(function(b){
+            if(b.textContent.indexOf(correct.l) !== -1) b.classList.add('correct');
+          });
+          fb.textContent = '沒關係，正確答案是「'+correct.l+'」';
+          fb.className = 'feedback bad';
+        }
+        setTimeout(function(){ showRating(isCorrect); }, 1100);
+      };
+      wrap.appendChild(btn);
+    });
+  }
+
+  function showRating(wasCorrect){
+    var meta = ROUND_META[roundIndex];
+    stage.innerHTML =
+      '<div class="card">'+
+        renderProgress(roundIndex)+
+        '<h2>'+meta.label+'　這一關</h2>'+
+        '<p class="sub">你覺得用這種方式，好不好記呢？</p>'+
+        '<div class="rate-row">'+
+          '<div class="rate-btn" data-v="2"><span class="e">😀</span>很好記</div>'+
+          '<div class="rate-btn" data-v="1"><span class="e">😐</span>普通</div>'+
+          '<div class="rate-btn" data-v="0"><span class="e">😕</span>不好記</div>'+
+        '</div>'+
+      '</div>';
+
+    var btns = document.querySelectorAll('.rate-btn');
+    btns.forEach(function(b){
+      b.onclick = function(){
+        var ratingScore = parseInt(b.getAttribute('data-v'), 10);
+        var key = meta.key;
+        scores[key] += ratingScore + (wasCorrect ? 2 : 0);
+        setTimeout(function(){ startRound(roundIndex + 1); }, 250);
+      };
+    });
+  }
+
+  function showResult(){
+    var bestKey = 'V';
+    var bestVal = -1;
+    Object.keys(scores).forEach(function(k){
+      if(scores[k] > bestVal){ bestVal = scores[k]; bestKey = k; }
+    });
+    var top = Object.keys(scores).filter(function(k){ return scores[k] === bestVal; });
+    var r = RESULTS[bestKey];
+
+    var multiNote = '';
+    if(top.length > 1){
+      multiNote = '<p class="result-tip">你其實不只一種厲害的學習方式，是個學習小達人！</p>';
+    }
+
+    stage.innerHTML =
+      '<div class="card">'+
+        '<div class="result-icon">'+r.icon+'</div>'+
+        '<div class="result-type">你是「'+r.name+'」！</div>'+
+        '<div class="result-desc">'+r.desc+'</div>'+
+        '<p class="result-tip">'+r.tip+'</p>'+
+        multiNote+
+        '<button class="btn secondary" id="againBtn">再玩一次</button>'+
+      '</div>';
+
+    document.getElementById('againBtn').onclick = function(){
+      scores = {V:0, A:0, R:0, K:0};
+      showStart();
+    };
+  }
+
+  showStart();
+})();
+</script>
+</body>
+</html>
