@@ -1,0 +1,394 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>抓AI的錯小遊戲</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap">
+<style>
+/* Layout: 一欄式課堂互動頁。上方四個分頁（三個遊戲＋教師用），每個遊戲先看規則、再玩、最後看「怎麼查」。投影與手機都能用。 */
+:root{
+  --bg:#F2F5FA; --surface:#FFFFFF; --surface-2:#E8EDF6; --ink:#16213E; --ink-2:#4B5671; --line:#D3DAE8;
+  --accent:#E8702A; --on-accent:#16213E; --accent-text:#B8470F;
+  --good:#17704A; --good-bg:#DDF2E7; --bad:#B3302F; --bad-bg:#FBE3E1; --warn:#7A4E00; --warn-bg:#FCEFCB;
+  --shadow:0 1px 0 rgba(22,33,62,.06),0 10px 28px rgba(22,33,62,.07);
+  --font:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1629; --surface:#18213B; --surface-2:#222D4D; --ink:#EDF1FA; --ink-2:#AAB4CE; --line:#2F3B5E;
+    --accent:#F08A45; --on-accent:#10172B; --accent-text:#F4A46C;
+    --good:#6FD6A2; --good-bg:#173A2C; --bad:#FF9A96; --bad-bg:#3E1D22; --warn:#F2C66B; --warn-bg:#3A2E12;
+    --shadow:0 1px 0 rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.35);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1629; --surface:#18213B; --surface-2:#222D4D; --ink:#EDF1FA; --ink-2:#AAB4CE; --line:#2F3B5E;
+  --accent:#F08A45; --on-accent:#10172B; --accent-text:#F4A46C;
+  --good:#6FD6A2; --good-bg:#173A2C; --bad:#FF9A96; --bad-bg:#3E1D22; --warn:#F2C66B; --warn-bg:#3A2E12;
+  --shadow:0 1px 0 rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.35);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{
+  margin:0; background:var(--bg); color:var(--ink); font-family:var(--font); font-size:18px; line-height:1.65;
+  padding-block:24px 72px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+}
+p,h1,h2,h3,ul{margin:0}
+.wrap{max-width:920px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+.top{display:flex;align-items:center;gap:16px}
+.mark{flex:none;width:64px;height:64px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center}
+.eyebrow{font-size:15px;font-weight:700;letter-spacing:.14em;color:var(--accent-text)}
+h1{font-size:clamp(28px,5.5vw,44px);line-height:1.15;font-weight:900;text-wrap:balance}
+h2{font-size:clamp(22px,3.6vw,30px);line-height:1.25;font-weight:900;text-wrap:balance}
+h3{font-size:20px;line-height:1.3;font-weight:700}
+.sub{color:var(--ink-2)}
+.tabs{display:flex;flex-wrap:wrap;gap:10px}
+.tab{font:inherit;font-weight:700;min-height:52px;padding:0 20px;border-radius:14px;border:2px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);padding:clamp(20px,4vw,32px);display:flex;flex-direction:column;gap:20px;min-width:0}
+.lead{font-size:clamp(18px,2.6vw,22px)}
+.rules{padding-left:1.3em;display:flex;flex-direction:column;gap:6px}
+.row{display:flex;flex-wrap:wrap;gap:12px}
+.btn{font:inherit;font-weight:700;min-height:56px;padding:8px 24px;border-radius:14px;border:2px solid var(--line);background:var(--surface-2);color:var(--ink);cursor:pointer;line-height:1.3}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn:disabled{cursor:default}
+.btn:focus-visible,.tab:focus-visible,.sent:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.meta{display:flex;justify-content:space-between;font-weight:700;color:var(--ink-2)}
+.meta b{color:var(--ink)}
+.bar{height:10px;border-radius:999px;background:var(--surface-2);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.think{font-weight:700;color:var(--accent-text)}
+.bubble{background:var(--surface-2);border-radius:22px 22px 22px 4px;padding:20px 24px;display:flex;flex-direction:column;gap:8px}
+.who{font-size:15px;font-weight:700;letter-spacing:.1em;color:var(--ink-2)}
+.say{font-size:clamp(19px,2.8vw,26px);font-weight:500;line-height:1.75}
+.choices{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.choices .btn{font-size:clamp(20px,3.4vw,26px);min-height:68px}
+.btn.correct{background:var(--good-bg);border-color:var(--good);color:var(--good)}
+.btn.wrong{background:var(--bad-bg);border-color:var(--bad);color:var(--bad)}
+.reveal{display:flex;flex-direction:column;gap:12px;border-top:2px dashed var(--line);padding-top:20px}
+.verdict{align-self:flex-start;display:inline-block;font-weight:900;padding:4px 16px;border-radius:999px}
+.v-true{background:var(--good-bg);color:var(--good)}
+.v-false{background:var(--bad-bg);color:var(--bad)}
+.v-unsure{background:var(--warn-bg);color:var(--warn)}
+.chip{display:inline-block;padding:2px 14px;border-radius:999px;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:16px;margin-right:8px}
+.pts{font-weight:700}
+.sents{display:flex;flex-direction:column;gap:10px}
+.sent{font:inherit;text-align:left;width:100%;display:grid;grid-template-columns:auto 1fr;gap:4px 14px;align-items:start;padding:14px 18px;border-radius:14px;border:2px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.sent .no{grid-row:1;font-weight:900;color:var(--ink-2);min-width:1.4em}
+.sent .tx{grid-column:2;font-size:clamp(19px,3vw,24px);font-weight:500}
+.sent .tag,.sent .why{grid-column:2;font-size:16px}
+.sent .tag{font-weight:700}
+.sent.flag{border-color:var(--warn);background:var(--warn-bg)}
+.sent.flag .tag{color:var(--warn)}
+.sent.hit{border-color:var(--good);background:var(--good-bg)}
+.sent.hit .tag{color:var(--good)}
+.sent.miss{border-color:var(--bad);background:var(--bad-bg)}
+.sent.miss .tag{color:var(--bad)}
+.sent.fa{border-color:var(--warn);background:var(--warn-bg)}
+.sent.fa .tag{color:var(--warn)}
+.sent:disabled{cursor:default}
+.sent .why{color:var(--ink-2)}
+.note{background:var(--warn-bg);color:var(--ink);border-radius:14px;padding:14px 18px}
+.result{display:flex;flex-direction:column;gap:6px;background:var(--surface-2);border-radius:14px;padding:16px 20px}
+.scn{display:flex;flex-direction:column;gap:14px;padding:20px;border-radius:16px;background:var(--surface-2)}
+.scn .q{font-size:clamp(19px,3vw,24px);font-weight:700}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.fb{font-weight:500}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:17px}
+th,td{text-align:left;vertical-align:top;padding:12px 14px;border-bottom:1px solid var(--line)}
+th{font-size:15px;letter-spacing:.06em;color:var(--ink-2)}
+.tips{padding-left:1.3em;display:flex;flex-direction:column;gap:8px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="mark" aria-hidden="true">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>
+    </div>
+    <div>
+      <p class="eyebrow">第4節　找錯大作戰</p>
+      <h1>抓AI的錯小遊戲</h1>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="遊戲選單">
+    <button class="tab" role="tab" id="tab-quick" data-tab="quick">快問快答</button>
+    <button class="tab" role="tab" id="tab-hide" data-tab="hide">找藏錯句</button>
+    <button class="tab" role="tab" id="tab-steps" data-tab="steps">三步驟配對</button>
+    <button class="tab" role="tab" id="tab-teacher" data-tab="teacher">老師怎麼用</button>
+  </nav>
+
+  <section class="card" id="panel-quick" role="tabpanel" aria-labelledby="tab-quick">
+    <h2>快問快答：AI說的對嗎？</h2>
+    <div id="quick-body" style="display:flex;flex-direction:column;gap:20px"></div>
+  </section>
+
+  <section class="card" id="panel-hide" role="tabpanel" aria-labelledby="tab-hide" hidden>
+    <h2>找藏錯句：AI介紹玉山</h2>
+    <div id="hide-body" style="display:flex;flex-direction:column;gap:20px"></div>
+  </section>
+
+  <section class="card" id="panel-steps" role="tabpanel" aria-labelledby="tab-steps" hidden>
+    <h2>三步驟配對：該用哪一步？</h2>
+    <div id="steps-body" style="display:flex;flex-direction:column;gap:20px"></div>
+  </section>
+
+  <section class="card" id="panel-teacher" role="tabpanel" aria-labelledby="tab-teacher" hidden>
+    <h2>老師怎麼用</h2>
+    <p class="lead">三個遊戲都可以用一台投影機帶全班玩，也可以兩人一機各自玩。每一個都在練同一件事：先想，再選，最後去查。</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>節次</th><th>穿插位置</th><th>活動</th><th>時間</th><th>時間從哪裡挪</th></tr></thead>
+        <tbody>
+          <tr><td>第1節</td><td>口訣回顧後，暖身</td><td>快問快答「暖身組」（4題）</td><td>約8分鐘（時間不夠可只做前2題）</td><td>題目本身就是AI會答錯的示範，可取代大部分「教師示範」</td></tr>
+          <tr><td>第4節</td><td>教師示範的位置</td><td>三步驟配對（5題）</td><td>約6分鐘</td><td>取代「教師示範」的講解，學生用配對自己歸納三步驟</td></tr>
+          <tr><td>第4節</td><td>學生操作的前半</td><td>找藏錯句（玉山）</td><td>約7分鐘</td><td>學生操作縮為10分鐘，查證句數改為3句</td></tr>
+          <tr><td>第4節或下一節</td><td>收尾或下一節暖身</td><td>快問快答「收尾組」（5題）</td><td>約10分鐘</td><td>放在對照與歸納，或改作下一節的暖身</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>帶活動的小提醒</h3>
+    <ul class="tips">
+      <li>每題都要讓學生先想一想、一句一句檢查再按。每題都是一段有推理的話，錯的題目大多是某一步推理藏了錯，答完請學生指出「錯在哪一句」。全班一起玩時，可以用手勢或舉牌表態（對、不確定、錯），老師點多數人的選擇。</li>
+      <li>選「不確定」也有分，用意是鼓勵誠實。有些句子沒有出處，選「不確定」才是最好的答案。</li>
+      <li>每題答完一定要看「怎麼查」。至少挑一題，真的翻課本或用地圖查一次，學生才會覺得查證是做得到的事。</li>
+      <li>找藏錯句裡有一句很像真的（第一座國家公園）。學生沒找到時，用它帶出「很肯定的說法更要查」。</li>
+      <li>題目是一般常識，上課前請對照課本版本或可靠網站再核對一次。</li>
+      <li>想換成翰林國語或南一數學的內容，可以請 Claude 更換題目。</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+(function(){
+  var $=function(s,r){return (r||document).querySelector(s)};
+  var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
+
+  /* ---------- 分頁 ---------- */
+  var TABS=['quick','hide','steps','teacher'];
+  function show(name){
+    if(TABS.indexOf(name)<0) name='quick';
+    TABS.forEach(function(t){
+      $('#panel-'+t).hidden=(t!==name);
+      $('#tab-'+t).setAttribute('aria-selected',t===name?'true':'false');
+    });
+  }
+  $$('.tab').forEach(function(b){
+    b.addEventListener('click',function(){
+      show(b.dataset.tab);
+      try{location.hash=b.dataset.tab}catch(e){}
+    });
+  });
+  window.addEventListener('hashchange',function(){show(location.hash.slice(1))});
+
+  /* ---------- 快問快答 ---------- */
+  var QUICK=[
+    {say:'蜘蛛是昆蟲。昆蟲的身體都分成頭、胸、腹三個部分，而且都有六隻腳。所以蜘蛛有六隻腳。',ans:'false',why:'錯在第一句。蜘蛛不是昆蟲，是蛛形類。蜘蛛的身體分成頭胸部和腹部兩個部分，有8隻腳。昆蟲才是頭、胸、腹三個部分、6隻腳。',how:'換地方查',where:'翻自然課本或動物圖鑑，數數看圖上蜘蛛的腳，再查「昆蟲」有哪些特徵。'},
+    {say:'蝙蝠會飛，但會飛不是分辨鳥類的標準。母蝙蝠把寶寶生下來，再用乳汁餵牠長大。會這樣照顧寶寶的動物是哺乳類。所以蝙蝠是哺乳類，不是鳥類。',ans:'true',why:'每一步都合理。分辨動物要看牠怎麼生寶寶、怎麼養寶寶，不是看會不會飛。蝙蝠是胎生、會哺乳，是哺乳類。',how:'換地方查',where:'翻自然課本或動物圖鑑，查「哺乳類」有哪些特徵。'},
+    {say:'比較小數的大小時，先看小數點後面的數字。9.11 小數點後面是 11，9.9 小數點後面是 9。11 比 9 大，所以 9.11 比 9.9 大。',ans:'false',why:'錯在最後一步，把「11」和「9」當成整數來比。小數要從左邊第一位開始，一位一位比：9.9 就是 9.90，十分位的 9 比 1 大，所以 9.9 比 9.11 大。',how:'換地方查',where:'先自己用數線或直式比比看（把 9.9 寫成 9.90），再對照數學課本。'},
+    {say:'某大學追蹤了數百位學生，發現每天吃巧克力的學生，期末平均成績比較高。所以只要每天吃巧克力，考試就會考100分。',ans:'unsure',why:'有兩個問題。第一，沒說是哪所大學、哪個研究，查不到出處。第二，「成績比較高」不代表是巧克力造成的，更不能說成「會考100分」。沒有出處又推得太遠，先不要相信。',how:'看來源',where:'問清楚：是哪一所大學？哪一篇研究？在哪裡看得到？研究真的說「吃了就會考100分」嗎？'},
+    {say:'一件原價100元的商品，先打8折，再打9折。打8折就是少付20%，打9折就是再少付10%，一共少付30%。所以最後只要付70元，等於打7折。',ans:'false',why:'錯在第三句，把兩次折扣直接相加了。第二次的9折，是用第一次打折後的80元來算：100 × 0.8 = 80，80 × 0.9 = 72，所以要付72元，等於打7.2折。AI算到好幾個步驟連在一起時，容易在中間出錯。',how:'換地方查',where:'自己算算看：先算出第一次打折後的價錢，再用這個價錢算第二次，最後再對照數學課本。'},
+    {say:'光在空氣中每秒約走30萬公里，聲音每秒只走約340公尺，光快非常多。打雷時，閃電和雷聲是同時發生的，但光先到達眼睛，聲音晚一點才到耳朵。所以會先看到閃電，才聽到雷聲。',ans:'true',why:'每一步都合理，數字也對。光比聲音快非常多，所以同一個地方發生的閃電和雷聲，光會先到。離得越遠，兩者相差的時間越久。',how:'換地方查',where:'自然課本或科學圖書，查「光的速度」和「聲音的速度」。'},
+    {say:'鯨魚住在海裡，身體是流線型，而且很會游泳。住在水裡、會游泳的動物就是魚類。所以鯨魚是魚類。',ans:'false',why:'錯在第三句。住在水裡、會游泳的動物不一定是魚類，例如海豚、海龜、蝦子。鯨魚用肺呼吸、胎生、會餵寶寶喝奶，是哺乳類。',how:'換地方查',where:'翻圖鑑或自然課本，查「魚類」和「哺乳類」怎麼分。'},
+    {say:'臺北101位在信義區。信義區是臺北市的行政區，不是新北市的。所以臺北101在臺北市，不在新北市。',ans:'true',why:'每一步都合理。臺北101位在臺北市信義區，信義區屬於臺北市。可以用地圖確認「信義區」屬於哪一個市。',how:'換地方查',where:'打開地圖，找到臺北101，看看它在哪一個縣市。'},
+    {say:'1/2 和 1/3 的分子都是1。分子一樣時，分母越大，表示把一個東西平分成越多份，每一份就越小。3 比 2 大，所以 1/3 比較小。因此 1/2 比 1/3 大。',ans:'true',why:'每一步都合理。同樣是1個單位，平分成2份，每一份比平分成3份大。',how:'換地方查',where:'畫圖或用分數條比比看，再對照數學課本。'}
+  ];
+  var Q={mode:'start',range:[0,QUICK.length],i:0,score:0,log:[]};
+
+  function qStart(a,b){Q.range=[a,b];Q.i=a;Q.score=0;Q.log=[];Q.mode='play';qRender();}
+
+  function qRender(){
+    var body=$('#quick-body');
+    if(Q.mode==='start'){
+      body.innerHTML=
+        '<p class="lead">AI說了一段話，每一步聽起來都很有道理。你先想一想，再選「對」「不確定」或「錯」。</p>'+
+        '<ul class="rules">'+
+          '<li>先想，再按。</li>'+
+          '<li>答對 +2 分。選「不確定」+1 分，誠實也很重要，但接下來要去查。</li>'+
+          '<li>有些句子沒有出處，選「不確定」才是最好的答案。</li>'+
+        '</ul>'+
+        '<div class="row">'+
+          '<button class="btn primary" id="q-all">全部 9 題</button>'+
+          '<button class="btn" id="q-a">暖身組 4 題</button>'+
+          '<button class="btn" id="q-b">收尾組 5 題</button>'+
+        '</div>';
+      $('#q-all').addEventListener('click',function(){qStart(0,9)});
+      $('#q-a').addEventListener('click',function(){qStart(0,4)});
+      $('#q-b').addEventListener('click',function(){qStart(4,9)});
+      return;
+    }
+    if(Q.mode==='end'){qEnd();return;}
+    var it=QUICK[Q.i],total=Q.range[1]-Q.range[0],n=Q.i-Q.range[0]+1;
+    body.innerHTML=
+      '<div class="meta"><span>第 '+n+' / '+total+' 題</span><span>分數 <b id="q-score">'+Q.score+'</b></span></div>'+
+      '<div class="bar" aria-hidden="true"><i id="q-bar"></i></div>'+
+      '<p class="think">先想一想：這段話每一步都合理嗎？一句一句檢查。</p>'+
+      '<div class="bubble"><span class="who">AI 說</span><p class="say">'+it.say+'</p></div>'+
+      '<div class="choices" id="q-choices">'+
+        '<button class="btn" data-c="true">對</button>'+
+        '<button class="btn" data-c="unsure">不確定</button>'+
+        '<button class="btn" data-c="false">錯</button>'+
+      '</div>'+
+      '<div class="reveal" id="q-reveal" aria-live="polite" hidden></div>';
+    $('#q-bar').style.width=((n-1)/total*100)+'%';
+    $$('#q-choices .btn').forEach(function(b){b.addEventListener('click',function(){qPick(b.dataset.c)})});
+  }
+
+  function qPick(c){
+    var it=QUICK[Q.i],pts=0;
+    if(c===it.ans)pts=2;else if(c==='unsure')pts=1;
+    Q.score+=pts;Q.log.push({it:it,pts:pts});
+    $$('#q-choices .btn').forEach(function(b){
+      b.disabled=true;
+      if(b.dataset.c===it.ans)b.classList.add('correct');
+      else if(b.dataset.c===c)b.classList.add('wrong');
+    });
+    $('#q-score').textContent=Q.score;
+    var v={'true':['v-true','這段話每一步都合理，是對的'],'false':['v-false','這段話有錯'],'unsure':['v-unsure','查不到出處，先不要相信']}[it.ans];
+    var msg=pts===2?'答對了 +2':(pts===1?'你選了「不確定」+1。誠實很好，接下來要去查。':'這題猜錯了 +0。沒關係，看看怎麼查。');
+    var last=(Q.i===Q.range[1]-1);
+    var r=$('#q-reveal');
+    r.hidden=false;
+    r.innerHTML=
+      '<span class="verdict '+v[0]+'">'+v[1]+'</span>'+
+      '<p class="pts">'+msg+'</p>'+
+      '<p>'+it.why+'</p>'+
+      '<p><span class="chip">'+it.how+'</span>'+it.where+'</p>'+
+      '<div class="row"><button class="btn primary" id="q-next">'+(last?'看結果':'下一題')+'</button></div>';
+    $('#q-next').addEventListener('click',function(){
+      Q.i++;
+      if(Q.i>=Q.range[1])Q.mode='end';
+      qRender();
+      $('#panel-quick').scrollIntoView({block:'start'});
+    });
+    $('#q-next').focus();
+  }
+
+  function qEnd(){
+    var total=Q.range[1]-Q.range[0],max=total*2;
+    var weak=Q.log.filter(function(l){return l.pts<2});
+    var list=weak.length?
+      '<h3>這幾題再用三步驟查一次</h3><ul class="rules">'+weak.map(function(l){return '<li>「'+l.it.say+'」　'+l.it.why+'</li>'}).join('')+'</ul>':
+      '<p>每一題都答對了。接下來，挑一題真的去課本查一查。</p>';
+    $('#quick-body').innerHTML=
+      '<p class="lead">你的分數：<b>'+Q.score+' / '+max+'</b></p>'+
+      '<p>重點不是全對，而是知道什麼時候要去查。</p>'+list+
+      '<div class="row"><button class="btn primary" id="q-again">再玩一次</button></div>';
+    $('#q-again').addEventListener('click',function(){Q.mode='start';qRender()});
+  }
+
+  /* ---------- 找藏錯句 ---------- */
+  var HIDE=[
+    {t:'玉山是台灣最高的山。',wrong:false,why:'正確。玉山是台灣第一高峰。'},
+    {t:'玉山的高度比台北101大樓還要矮。',wrong:true,why:'臺北101約508公尺，玉山約3,952公尺，玉山高很多。'},
+    {t:'玉山的高度約3,952公尺。',wrong:false,why:'正確。玉山約3,952公尺，是臺灣最高峰。'},
+    {t:'玉山在冬天，山頂有時候會下雪。',wrong:false,why:'正確。冬天高山氣溫很低，玉山山頂有時會下雪。'},
+    {t:'玉山位在新北市。',wrong:true,why:'玉山不在新北市。玉山主要在南投、嘉義、高雄、花蓮一帶。'},
+    {t:'玉山國家公園是台灣第一座國家公園。',wrong:true,why:'第一座是墾丁國家公園（1984年），玉山國家公園是第二座（1985年）。這句很像真的，所以更要查。'}
+  ];
+  var H={flag:{},checked:false,hint:false};
+
+  function hRender(){
+    var body=$('#hide-body'),total=HIDE.filter(function(x){return x.wrong}).length;
+    var found=0,miss=0,fa=0;
+    HIDE.forEach(function(s,i){
+      var f=!!H.flag[i];
+      if(s.wrong&&f)found++;else if(s.wrong&&!f)miss++;else if(!s.wrong&&f)fa++;
+    });
+    var html='<p class="think">先想：你已經知道玉山的哪些事？先在學習單寫3件事，再來抓錯。</p>'+
+      '<p>AI寫了下面6句話，裡面藏了 <b>'+total+'</b> 個錯誤。點一下你覺得有錯的句子。</p>'+
+      '<div class="bubble"><span class="who">AI 介紹：玉山</span><div class="sents">';
+    HIDE.forEach(function(s,i){
+      var f=!!H.flag[i],cls='',tag='';
+      if(H.checked){
+        if(s.wrong&&f){cls='hit';tag='抓到了！這句有錯'}
+        else if(s.wrong){cls='miss';tag='漏掉了：這句有錯'}
+        else if(f){cls='fa';tag='這句其實是對的'}
+        else{tag='這句是對的'}
+      }else if(f){cls='flag';tag='我覺得有錯'}
+      html+='<button class="sent '+cls+'" data-i="'+i+'" aria-pressed="'+f+'"'+(H.checked?' disabled':'')+'>'+
+        '<span class="no">'+(i+1)+'</span><span class="tx">'+s.t+'</span>'+
+        (tag?'<span class="tag">'+tag+'</span>':'')+
+        (H.checked?'<span class="why">'+s.why+'</span>':'')+'</button>';
+    });
+    html+='</div></div>';
+    if(H.hint&&!H.checked){
+      html+='<div class="note">提示：看數字合不合理、地點對不對。「第一」「最」這種很肯定的說法，要特別查。查的時候用三步驟：看來源、換地方查、問課本或老師。</div>';
+    }
+    if(H.checked){
+      html+='<div class="result"><p><b>找到 '+found+' / '+total+' 個錯誤</b></p>'+
+        (fa?'<p>有 '+fa+' 句其實是對的。先查再說，不要冤枉AI。</p>':'')+
+        (miss?'<p>漏掉 '+miss+' 個。下次遇到很肯定的說法，就多查一步。</p>':'<p>全部找出來了！</p>')+'</div>';
+    }
+    html+='<div class="row">'+
+      (H.checked?'':'<button class="btn primary" id="h-check">檢查答案</button><button class="btn" id="h-hint">'+(H.hint?'收起提示':'看提示')+'</button>')+
+      '<button class="btn'+(H.checked?' primary':'')+'" id="h-reset">重玩</button></div>';
+    body.innerHTML=html;
+    $$('.sent',body).forEach(function(b){
+      b.addEventListener('click',function(){
+        var i=b.dataset.i;H.flag[i]=!H.flag[i];hRender();
+        var again=$('.sent[data-i="'+i+'"]');if(again)again.focus();
+      });
+    });
+    var c=$('#h-check');if(c)c.addEventListener('click',function(){H.checked=true;hRender()});
+    var h=$('#h-hint');if(h)h.addEventListener('click',function(){H.hint=!H.hint;hRender()});
+    $('#h-reset').addEventListener('click',function(){H={flag:{},checked:false,hint:false};hRender()});
+  }
+
+  /* ---------- 三步驟配對 ---------- */
+  var STEPLABEL={source:'看來源',other:'換地方查',ask:'問課本或老師'};
+  var STEPS=[
+    {s:'AI說：「有研究證明……」，但沒說是誰做的研究。',a:'source',why:'沒有出處的話，要先問清楚：是誰做的？在哪裡看得到？這就是「看來源」。'},
+    {s:'AI說鯨魚是魚類，你覺得怪怪的，想看看書上怎麼說。',a:'other',why:'拿課本、圖鑑來對照，就是「換地方查」。'},
+    {s:'你查了課本和圖鑑，兩個地方的說法不一樣，你還是不確定。',a:'ask',why:'查了還是不確定時，就請老師或懂的大人幫忙判斷。'},
+    {s:'AI給了一個書名和網址，說答案就在那裡。',a:'source',why:'AI給的出處也可能是編的。先確定這個出處是真的、可靠的，就是「看來源」。'},
+    {s:'AI說臺北101在新北市，你打開地圖看看。',a:'other',why:'換一個地方（地圖）來對照，就是「換地方查」。'}
+  ];
+  var S={ans:{}};
+
+  function sRender(){
+    var body=$('#steps-body');
+    var done=Object.keys(S.ans).length,right=0;
+    STEPS.forEach(function(x,i){if(S.ans[i]===x.a)right++});
+    var html='<p class="lead">每個情況，該用「看來源」「換地方查」還是「問課本或老師」？選一個。</p>'+
+      '<div class="meta"><span>已完成 '+done+' / '+STEPS.length+'</span><span>答對 <b>'+right+'</b></span></div>';
+    STEPS.forEach(function(x,i){
+      var picked=S.ans[i];
+      html+='<div class="scn"><p class="q">'+x.s+'</p><div class="opts">';
+      ['source','other','ask'].forEach(function(k){
+        var cls='btn';
+        if(picked){
+          if(k===x.a)cls+=' correct';else if(k===picked)cls+=' wrong';
+        }
+        html+='<button class="'+cls+'" data-i="'+i+'" data-k="'+k+'"'+(picked?' disabled':'')+'>'+STEPLABEL[k]+'</button>';
+      });
+      html+='</div>';
+      if(picked){
+        html+='<p class="fb"><b>'+(picked===x.a?'答對了。':'再想想。這題要用「'+STEPLABEL[x.a]+'」。')+'</b>'+x.why+'</p>';
+      }
+      html+='</div>';
+    });
+    if(done===STEPS.length){
+      html+='<div class="result"><p><b>全部完成：答對 '+right+' / '+STEPS.length+'</b></p><p>回到「抓AI的錯」任務，每查一句，就想一想自己用了哪一步。</p></div>';
+    }
+    html+='<div class="row"><button class="btn'+(done===STEPS.length?' primary':'')+'" id="s-reset">重玩</button></div>';
+    body.innerHTML=html;
+    $$('.opts .btn',body).forEach(function(b){
+      b.addEventListener('click',function(){
+        S.ans[b.dataset.i]=b.dataset.k;sRender();
+        var nxt=$$('.scn')[+b.dataset.i];if(nxt){var fb=$('.fb',nxt);if(fb)fb.scrollIntoView({block:'nearest'})}
+      });
+    });
+    $('#s-reset').addEventListener('click',function(){S={ans:{}};sRender()});
+  }
+
+  qRender();hRender();sRender();
+  show(location.hash.slice(1));
+})();
+</script>
+
+</body></html>
